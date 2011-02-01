@@ -1,0 +1,55 @@
+####### example for template.cfg
+define host{
+        name                            TEMPLATE-HOST    ; The name of this host template
+        use                             generic-host    ; This template inherits other values from the generic-host template
+        check_period                    24x7            ; By default, Linux hosts are checked round the clock
+        check_interval                  7               ; Actively check the host every 5 minutes
+        retry_interval                  2               ; Schedule host check retries at 1 minute intervals
+        max_check_attempts              10              ; Check each Linux host 10 times (max)
+        check_command                   check_ssh!-t 320        ; Default command to check if servers are "alive"
+        notification_period             workhours       ; Linux admins hate to be woken up, so we only notify during the day
+        notification_interval           0               ; Resend notifications every 2 hours
+        notification_options            d,u,r           ; Only send notifications for specific host states
+        contact_groups                  admins          ; Notifications get sent to the admins by default
+        _QUEUEINCOMINGMAIL              /var/spool/exim4_incoming/input
+        _DNSSERVICE                     pdns
+        _GWNRPE                         None            ; DEFAULT VUOTO  IMPOSTARE L'IP DEL GW SE _ENABLENRPE E' IMPOSTATO AD 1
+        register                        0               ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
+        }
+
+
+
+###### example for host.cfg  "DIRECT MODE"
+#VALUE _GWNRPE IS DEFINED IN TEMPLATE-HOST
+define host{
+        use                     TEMPLATE-HOST           ; Name of host template to use
+        host_name               host.cubelibre.it
+        alias                   host.cubelibre.it
+        address                 host.cubelibre.it
+        }
+
+###### example for host.cfg  "HOP MODE"
+#_GWNRPE OVERRIDE TEMPLATE-HOST VALUE
+define host{
+        use                     TEMPLATE-HOST            ; Name of host template to use
+        host_name               host.cubelibre.it
+        alias                   host.cubelibre.it
+        address                 host.cubelibre.it
+        _GWNRPE                 ip.host.gw
+        }
+
+
+###### example for service.cfg  
+define service{
+        use                             local-service         ; Name of service template to use
+        host				host.cubelibre.it                      
+        service_description             Root Partition
+        check_command                   check_nrpe!check_disk!20%!10%!/
+
+##### example for command.cfg 
+define command{
+command_name check_nrpe
+        command_line /usr/lib/nagios/plugins/switch_nrpe --fhost=$HOSTADDRESS$ --fhop=$_HOSTGWNRPE$  --fcmd=$ARG1$ $ARG2$ $ARG3$ $ARG4$  $ARG5$ $ARG6$ $ARG7$
+
+        }
+
